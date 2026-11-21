@@ -1,0 +1,23 @@
+[
+  {"type": "pf", "name": "Parque Fechado - Estádio Municipal Dr. Magalhães Pessoa, Leiria", "lat": 39.7487752, "lon": -8.812924, "note": "Regulamento Particular (CH 4D; localização do Estádio)"},
+  {"type": "assist", "name": "Parque de Assistência - Estádio Municipal Dr. Magalhães Pessoa, Leiria", "lat": 39.7487752, "lon": -8.812924, "note": "Regulamento Particular, art. 1.9 (parque de estacionamento do Estádio)"},
+  {"type": "start", "name": "Partida do Rali - Estádio Municipal, Leiria", "lat": 39.7487752, "lon": -8.812924, "note": "Regulamento Particular (localização do Estádio)"},
+  {"type": "finish", "name": "Chegada do Rali - Estádio Municipal, Leiria", "lat": 39.7487752, "lon": -8.812924, "note": "Regulamento Particular (localização do Estádio)"},
+  {"type": "gas", "name": "Zona de Reabastecimento - Leiria (junto à assistência)", "lat": 39.7487752, "lon": -8.812924, "note": "Mapa de controlos (Reabastecimento - Leiria); ponto aprox., por confirmar no roadbook"},
+  {"type": "gas", "name": "Reabastecimento remoto - Pombal", "lat": 39.919057, "lon": -8.631597, "note": "Regulamento Particular, art. 1.10 (link de mapa oficial)"},
+  {"type": "start", "name": "Partida Shakedown / PE 2 Santa (Caranguejeira)", "lat": 39.773039, "lon": -8.713939, "note": "coordenadas oficiais"},
+  {"type": "finish", "name": "Chegada Shakedown (Caranguejeira)", "lat": 39.774217, "lon": -8.68325, "note": "coordenadas oficiais"},
+  {"type": "finish", "name": "Chegada PE 2 Santa", "lat": 39.747978, "lon": -8.69363, "note": "coordenadas oficiais"},
+  {"type": "start", "name": "Partida PE 1/3 Igreja dos Milagres", "lat": 39.852237, "lon": -8.760562, "note": "coordenadas oficiais"},
+  {"type": "finish", "name": "Chegada PE 1/3 Igreja dos Milagres", "lat": 39.835842, "lon": -8.805159, "note": "coordenadas oficiais"},
+  {"type": "start", "name": "Partida PE 4 Super-Especial Marinha Grande", "lat": 39.748144, "lon": -8.936787, "note": "coordenadas oficiais"},
+  {"type": "finish", "name": "Chegada PE 4 Super-Especial Marinha Grande", "lat": 39.746411, "lon": -8.934179, "note": "coordenadas oficiais"},
+  {"type": "start", "name": "Partida PE 5/7 Mata Mourisca", "lat": 39.926366, "lon": -8.712037, "note": "coordenadas oficiais"},
+  {"type": "finish", "name": "Chegada PE 5/7 Mata Mourisca", "lat": 39.940551, "lon": -8.725865, "note": "coordenadas oficiais"},
+  {"type": "start", "name": "Partida PE 6/8 Pombal-Carnide", "lat": 39.932292, "lon": -8.706687, "note": "coordenadas oficiais"},
+  {"type": "finish", "name": "Chegada PE 6/8 Pombal-Carnide", "lat": 39.887242, "lon": -8.716754, "note": "coordenadas oficiais"},
+  {"type": "start", "name": "Partida PE 9/10 Pinhal do Rei", "lat": 39.771255, "lon": -8.993452, "note": "coordenadas oficiais"},
+  {"type": "finish", "name": "Chegada PE 9/10 Pinhal do Rei", "lat": 39.746854, "lon": -8.975122, "note": "coordenadas oficiais"},
+  {"type": "start", "name": "Partida City Stage Arena CIMRL", "lat": 39.748783, "lon": -8.810333, "note": "coordenadas oficiais"},
+  {"type": "finish", "name": "Chegada City Stage Arena CIMRL", "lat": 39.74995, "lon": -8.8096, "note": "coordenadas oficiais"}
+]
