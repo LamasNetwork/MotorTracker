@@ -2,6 +2,7 @@
 import { api, fetchEvents, timingIds, trackLinks } from './api.js';
 import { Race, STATE_LABEL, attrsOf, isLive, posOf, fmtTime, fmtGap } from './race.js';
 import { TrackSource, evaluate, siren, fmtKm, SIRENS, pushHistory, movement, haversine } from './proximity.js';
+import { loadChamp, matchRow, provisional, roundOf } from './champ.js';
 import { PLACE_TYPES, typeOf, wazeUrl, gmapsUrl, gmapsSearchUrl, wazeSearchUrl, parseCoords, loadCurated, fromSections, fuelNear, centerOf } from './places.js';
 
 const LS_KEY = 'motortracker.v1';
@@ -207,6 +208,7 @@ async function renderPick() {
   el.innerHTML = `
     <div class="card pad"><div class="muted small">Prova</div><b>${esc(S.event.name)}</b></div>
     <button class="btn stand-open" id="pickStand">🏆 Classificação geral e por classes</button>
+    <button class="btn stand-open" id="pickChamp">📊 Campeonatos</button>
     ${docsBlock([pickRid])}
     ${rids.length > 1 ? `<div class="tabs">${rids.map(r => `<button class="tab ${r === pickRid ? 'on' : ''}" data-r="${r}">${raceNames.get(r) ? raceIcon(raceNames.get(r)) + ' ' + esc(raceNames.get(r)) : 'Corrida ' + r}</button>`).join('')}</div>` : ''}
     <div class="filters">
@@ -254,6 +256,7 @@ async function renderPick() {
   });
   $('#goLive').onclick = () => { go('live'); poll(); };
   $('#pickStand').onclick = openStand;
+  $('#pickChamp').onclick = openChamp;
 }
 
 // Prova terminada há mais de 2 dias: em vez dos inscritos, só a classificação final.
@@ -261,7 +264,9 @@ function renderFinalPage() {
   if (stand.rid !== pickRid) { stand.rid = pickRid; stand.itin = null; stand.gkey = 'all'; }
   $('#title').textContent = 'Classificação final';
   $('#view').innerHTML = `<div class="card pad"><div class="muted small">Prova terminada</div><b>${esc(S.event.name)}</b></div>
+    <button class="btn stand-open" id="finalChamp">📊 Campeonatos</button>
     <div id="finalBody" class="sheet-body stand final-page"></div>`;
+  $('#finalChamp').onclick = openChamp;
   renderStand();
   refreshStand();
 }
@@ -378,6 +383,7 @@ function renderLive() {
 
   el.innerHTML = head + `
     ${activeCount ? '<button class="btn primary stand-open" id="openStand">🏆 Classificação geral e por classes</button>' : ''}
+    <button class="btn stand-open" id="openChamp">📊 Campeonatos</button>
     ${activeCount > 1 ? `<div class="card"><table class="sum"><thead><tr><th>N.º</th><th>Piloto</th><th>Último ponto</th><th>Geral</th><th>Classe</th></tr></thead><tbody>${summaryRows}</tbody></table></div>` : ''}
     ${activeCount ? docsBlock(activeRaces.map(x => x.rid)) : ''}
     ${activeCount ? placesCard() : ''}
@@ -397,6 +403,7 @@ function renderLive() {
   }
   el.querySelectorAll('[data-place]').forEach(b => b.onclick = () => openPlaces(b.dataset.place));
   $('#openStand')?.addEventListener('click', openStand);
+  $('#openChamp')?.addEventListener('click', openChamp);
   el.querySelectorAll('[data-final]').forEach(b => b.onclick = () => openFinal(Number(b.dataset.final)));
   el.querySelectorAll('[data-arch-rm]').forEach(b => b.onclick = () => {
     const [rid, pid] = b.dataset.archRm.split(':').map(Number);
@@ -572,6 +579,126 @@ function renderStand() {
 
 $('#standClose').addEventListener('click', () => $('#standDlg').close());
 $('#standDlg').addEventListener('close', () => { clearInterval(stand.timer); stand.timer = null; });
+
+// ---------- Campeonatos (oficial e provisória) ----------
+const CHAMP_SCOPES = [['all', 'Absoluto'], ['auto', 'Auto'], ['ssv', 'SSV'], ['T1+', 'T1+'], ['T1', 'T1'], ['T2', 'T2'], ['T3', 'T3'], ['T4', 'T4'], ['T4EA', 'T4EA'], ['T8', 'T8'], ['T9', 'T9'], ['T0', 'T0'], ['veterans', 'Veteranos'], ['women', 'Feminina']];
+const champ = { data: null, year: null, role: 'driver', scope: 'all', mode: null, timer: null, error: null, busy: false, view: '' };
+
+// Corrida de automóveis em curso (ou nos 2 dias seguintes) que pertence a uma ronda do campeonato.
+function champRace() {
+  if (!champ.data) return null;
+  const rids = [...new Set([...S.tracked.map(t => t.rid), ...(S.event?.rids || [])])];
+  for (const rid of rids) {
+    const race = getRace(rid);
+    if (!race.loaded || race.archived) continue;
+    const R = roundOf(champ.data, race.name);
+    if (R >= 0) return { rid, race, R, itin: race.itins[0]?.id };
+  }
+  return null;
+}
+
+async function refreshChampRace() {
+  const rids = [...new Set([...S.tracked.map(t => t.rid), ...(S.event?.rids || [])])];
+  if (champ.busy) return;
+  champ.busy = true;
+  await Promise.all(rids.map(async rid => {
+    const race = getRace(rid);
+    try {
+      if (!race.loaded) await race.load();
+      if (race.archived || /\b(FIM|FMP|MINI)\b/i.test(race.name) || (S.tracked.some(t => t.rid === rid) && race.lastOk)) return;
+      await race.refresh();
+    } catch { /* fica só a classificação oficial */ }
+  }));
+  champ.busy = false;
+  if ($('#champDlg').open) renderChamp();
+}
+
+async function openChamp() {
+  $('#champDlg').showModal();
+  renderChamp();
+  const year = new Date(Date.now()).getFullYear();
+  if (!champ.data || champ.year !== year) {
+    try {
+      champ.data = await loadChamp(year) || (year > 2026 ? await loadChamp(year - 1) : null);
+      champ.year = year;
+      champ.error = champ.data ? null : 'A classificação deste ano ainda não foi publicada.';
+    } catch (e) { champ.error = e.message || 'erro de ligação'; }
+    renderChamp();
+  }
+  clearInterval(champ.timer);
+  champ.timer = setInterval(refreshChampRace, Math.max(10, S.settings.interval) * 1000);
+  refreshChampRace();
+}
+
+function renderChamp() {
+  const body = $('#champBody');
+  const oldTop = body.querySelector('.stand-wrap')?.scrollTop || 0;
+  const ch = champ.data;
+  if (!ch) {
+    body.innerHTML = `<p class="${champ.error ? 'bad' : 'muted'} center pad">${esc(champ.error || 'A carregar campeonatos…')}</p>`;
+    return;
+  }
+  const hasTeam = ch.tables.some(t => t.role === 'team');
+  if (champ.role !== 'team' && !ch.tables.some(t => t.role === champ.role && t.scope === champ.scope)) champ.scope = 'all';
+  const table = ch.tables.find(t => t.role === champ.role && (champ.role === 'team' || t.scope === champ.scope));
+  const live = champRace();
+  const prov = live && table ? provisional(ch, table, live.race, live.itin, live.R) : null;
+  const canProv = !!prov && prov.scored > 0;
+  if (champ.mode == null && canProv) champ.mode = 'prov';
+  const mode = canProv && champ.mode !== 'official' ? 'prov' : 'official';
+  const rows = mode === 'prov' ? prov.rows : table?.rows || [];
+  const mine = new Set();
+  if (table) {
+    for (const t of S.tracked) {
+      const p = getRace(t.rid).parts.get(t.pid);
+      const row = p && matchRow(table.role === 'nav' ? p.copilot : p.pilot, table.rows);
+      if (row) mine.add(row.name);
+    }
+  }
+  const upd = new Date(ch.updated);
+  const num = v => (Number.isInteger(v) ? String(v) : v.toFixed(1).replace('.', ','));
+  const roleTabs = [['driver', 'Condutores'], ['nav', 'Navegadores'], ...(hasTeam ? [['team', 'Equipas']] : [])];
+  const scopes = champ.role === 'team' ? [] : CHAMP_SCOPES.filter(([k]) => ch.tables.some(t => t.role === champ.role && t.scope === k));
+  let html = `<div class="champ-name"><b>${esc(ch.name)}</b><span class="muted small">Oficial FPAK · ${upd.toLocaleDateString('pt-PT')}</span></div>
+    <div class="tabs" data-tabs="role">${roleTabs.map(([k, l]) => `<button class="tab ${champ.role === k ? 'on' : ''}" data-crole="${k}">${l}</button>`).join('')}</div>
+    ${scopes.length ? `<div class="tabs" data-tabs="scope">${scopes.map(([k, l]) => `<button class="tab ${champ.scope === k ? 'on' : ''}" data-cscope="${esc(k)}">${l}</button>`).join('')}</div>` : ''}`;
+  if (canProv) {
+    html += `<div class="seg"><button class="${mode === 'official' ? 'on' : ''}" data-cmode="official">Oficial</button><button class="${mode === 'prov' ? 'on' : ''}" data-cmode="prov">Provisória agora</button></div>`;
+  }
+  if (mode === 'prov') {
+    html += `<div class="muted small"><b class="bad">Provisória</b> · ${esc(live.race.name)}${prov.label ? ` · ${esc(prov.label)}` : ''}${prov.factor !== 1 ? ` · última prova ×${String(prov.factor).replace('.', ',')}` : ''}</div>`;
+  } else if (live && table?.role === 'nav') {
+    html += '<div class="muted small">A classificação provisória está disponível para condutores.</div>';
+  } else if (!canProv && table?.role === 'driver') {
+    html += '<div class="muted small">A classificação provisória aparece durante uma prova do campeonato.</div>';
+  }
+  if (rows.length) {
+    const ranked = rows.filter(r => r.pos != null).length;
+    html += `<div class="stand-wrap"><table class="stand-t champ-t"><thead><tr><th class="c-pos">Pos</th>${mode === 'prov' ? '<th class="c-delta" aria-label="Variação"></th>' : ''}<th class="c-num">N.º</th><th>Piloto</th>${mode === 'prov' ? '<th class="c-add">Prova</th>' : ''}<th class="c-pts">Pts</th></tr></thead><tbody>${rows.map(r => {
+      const pos = mode === 'prov' ? r.newPos : r.pos;
+      const d = mode === 'prov' && r.oldPos ? r.oldPos - r.newPos : 0;
+      const delta = d > 0 ? `<span class="up">▲${d}</span>` : d < 0 ? `<span class="down">▼${-d}</span>` : '';
+      return `<tr class="${mine.has(r.name) ? 'me' : ''} ${pos == null ? 'out' : ''}"><td class="pos c-pos">${pos == null ? '—' : `${pos}º`}</td>${mode === 'prov' ? `<td class="c-delta">${delta}</td>` : ''}<td class="num c-num">${esc(mode === 'prov' ? (r.raceIdent ?? r.ident) : r.ident)}</td><td title="${esc(r.name)}">${esc(r.name)}</td>${mode === 'prov' ? `<td class="c-add">${r.gain ? `+${num(r.gain)}` : ''}</td>` : ''}<td class="c-pts"><b>${num(r.total)}</b></td></tr>`;
+    }).join('')}</tbody></table></div>
+    <div class="muted small">${ranked} classificados${rows.length > ranked ? ` · ${rows.length - ranked} sem posição no campeonato` : ''}${mode === 'prov' ? ' · Sujeita a penalizações e à decisão dos comissários.' : ''}</div>`;
+  } else if (table) {
+    html += '<p class="muted center pad">Esta tabela só está disponível no documento oficial.</p>';
+  }
+  const pdf = table?.pdf && /^https:\/\/(www\.)?fpak\.pt\//.test(table.pdf) ? table.pdf : '';
+  html += `<div class="champ-links">${pdf ? `<a class="btn small" href="${esc(pdf)}" target="_blank" rel="noopener">📄 Documento oficial</a>` : ''}<a class="btn small" href="https://www.fmp.pt/r-todo-o-terreno/tt-classificacoes/" target="_blank" rel="noopener">🏍️ Motos (FMP)</a></div>`;
+  const sig = `${champ.role}:${champ.scope}:${mode}`;
+  body.innerHTML = html;
+  const wrap = body.querySelector('.stand-wrap');
+  if (wrap && sig === champ.view) wrap.scrollTop = oldTop;
+  champ.view = sig;
+  body.querySelectorAll('[data-tabs] .tab.on').forEach(on => { on.parentElement.scrollLeft = on.offsetLeft - on.parentElement.offsetLeft - 8; });
+  body.querySelectorAll('[data-crole]').forEach(b => b.onclick = () => { champ.role = b.dataset.crole; champ.scope = 'all'; renderChamp(); });
+  body.querySelectorAll('[data-cscope]').forEach(b => b.onclick = () => { champ.scope = b.dataset.cscope; renderChamp(); });
+  body.querySelectorAll('[data-cmode]').forEach(b => b.onclick = () => { champ.mode = b.dataset.cmode; renderChamp(); });
+}
+
+$('#champClose').addEventListener('click', () => $('#champDlg').close());
+$('#champDlg').addEventListener('close', () => { clearInterval(champ.timer); champ.timer = null; });
 
 // ---------- Adicionar mais pilotos sem sair do ecrã ao vivo ----------
 const addRids = () => [...new Set([...(S.event?.rids || []), ...S.tracked.map(t => t.rid)])];
@@ -1026,6 +1153,7 @@ async function poll() {
     checkAlerts();
     if (view === 'live') renderLive();
     if ($('#standDlg').open) renderStand();
+    if ($('#champDlg').open) renderChamp();
   } finally {
     polling = false;
   }

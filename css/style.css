@@ -230,6 +230,18 @@ table { border-collapse: collapse; width: 100%; }
 .stand-t .c-num { width: 38px; min-width: 0; text-align: center; }
 .stand-t .c-tm { width: 72px; text-align: right; font-variant-numeric: tabular-nums; }
 .stand-t .c-gap { width: 72px; padding-right: 8px; text-align: right; font-variant-numeric: tabular-nums; }
+.champ-name { display: grid; gap: 1px; font-size: 14px; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg button { min-height: 38px; border: 0; background: var(--card2); color: var(--text); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.seg button.on { background: var(--accent); color: var(--accent-ink); }
+.champ-t .c-delta { width: 30px; padding-left: 0; padding-right: 0; text-align: center; font-size: 11px; font-weight: 700; }
+.champ-t .c-add { width: 46px; text-align: right; color: var(--good); font-variant-numeric: tabular-nums; }
+.champ-t th.c-add { color: var(--muted); }
+.champ-t .c-pts { width: 48px; padding-right: 8px; text-align: right; font-variant-numeric: tabular-nums; }
+.champ-t .up { color: var(--good); }
+.champ-t .down { color: var(--bad); }
+.champ-links { display: flex; flex-wrap: wrap; gap: 6px; }
+.champ-links a { text-decoration: none; }
 .final-page { padding: 0; margin-top: 10px; overflow: visible; }
 .final-card { display: grid; gap: 4px; }
 .final-card > .btn { margin-top: 6px; }
