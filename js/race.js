@@ -2,6 +2,7 @@
 import { api } from './api.js';
 
 const SLOW_REFRESH_MS = 120000; // especiais terminadas: refresca de 2 em 2 minutos
+const ARCHIVE_AFTER_S = 2 * 86400; // 2 dias depois do fim fica só a classificação final
 
 export const STATE_LABEL = { 0: 'Por iniciar', 1: 'A decorrer', 2: 'Terminada', '-2': 'Neutralizada', '-1': 'Anulada' };
 
@@ -40,6 +41,7 @@ export class Race {
 
   get dec() { return this.info?.decimals ?? 1; }
   get name() { return this.info?.name || `Corrida ${this.rid}`; }
+  get archived() { const end = this.info?.ut_fin; return !!end && Date.now() / 1000 > end + ARCHIVE_AFTER_S; }
 
   async load() {
     if (this.loaded) return;

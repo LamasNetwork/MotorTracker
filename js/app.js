@@ -197,6 +197,8 @@ async function renderPick() {
     save();
     if (view !== 'pick') return;
   }
+  if (race.archived) { renderFinalPage(); return; }
+  $('#title').textContent = 'Escolher pilotos';
   const parts = [...race.parts.values()].sort((a, b) => (parseInt(a.ident, 10) || 1e9) - (parseInt(b.ident, 10) || 1e9) || String(a.ident).localeCompare(b.ident));
   const q = pickQuery.trim().toLowerCase();
   const shown = q ? parts.filter(p => `${p.ident} ${p.pilot} ${p.copilot} ${p.vehicle} ${p.class} ${p.category} ${p.competitor}`.toLowerCase().includes(q)) : parts;
@@ -254,6 +256,16 @@ async function renderPick() {
   $('#pickStand').onclick = openStand;
 }
 
+// Prova terminada há mais de 2 dias: em vez dos inscritos, só a classificação final.
+function renderFinalPage() {
+  if (stand.rid !== pickRid) { stand.rid = pickRid; stand.itin = null; stand.gkey = 'all'; }
+  $('#title').textContent = 'Classificação final';
+  $('#view').innerHTML = `<div class="card pad"><div class="muted small">Prova terminada</div><b>${esc(S.event.name)}</b></div>
+    <div id="finalBody" class="sheet-body stand final-page"></div>`;
+  renderStand();
+  refreshStand();
+}
+
 function track(rid, p, on) {
   const i = S.tracked.findIndex(t => t.rid === rid && t.pid === p.id);
   if (on && i < 0) S.tracked.push({ rid, pid: p.id, ident: p.ident });
@@ -290,6 +302,14 @@ function trackedByRace() {
 }
 const raceLabel = rid => raceNames.get(rid) || (getRace(rid).info ? getRace(rid).name : `Corrida ${rid}`);
 const pilotsLabel = n => `${n} ${n === 1 ? 'piloto' : 'pilotos'}`;
+const activeTracked = () => S.tracked.filter(t => !getRace(t.rid).archived);
+
+function finalResult(race, t) {
+  const itin = race.defaultItin(t.pid);
+  const sp = standSpecial(race, itin);
+  const pos = sp ? posOf(race.ranking(itin, sp.id, 'F', 'overall'), t.pid) : null;
+  return pos ? `${pos}º` : race.abandoned(t.pid) ? 'Abandono' : 'Sem tempo';
+}
 
 function renderLive() {
   const el = $('#view');
@@ -312,16 +332,19 @@ function renderLive() {
       ${errs.length ? `<span class="bad">⚠ ${esc(errs[0])} — a tentar de novo</span>` : ''}
       <button class="btn small" id="refreshNow">Atualizar</button>
       ${S.event ? '<button class="btn small" id="addMore">+ Pilotos</button>' : ''}
-    </div>${proxPanel()}`;
+    </div>${activeTracked().length ? proxPanel() : ''}`;
 
   if (loading && !lastUpdate) { el.innerHTML = head + '<p class="muted center pad">A obter tempos…</p>'; bindLiveHead(); return; }
 
   const cards = new Map(), summary = new Map();
   const byRace = trackedByRace();
+  const activeRaces = byRace.filter(x => !getRace(x.rid).archived);
+  const endedRaces = byRace.filter(x => getRace(x.rid).archived);
+  const activeCount = activeRaces.reduce((n, x) => n + x.list.length, 0);
   const addTo = (map, rid, html) => { if (!map.has(rid)) map.set(rid, []); map.get(rid).push(html); };
   for (const t of S.tracked) {
     const race = getRace(t.rid);
-    if (!race.loaded) continue;
+    if (!race.loaded || race.archived) continue;
     const { c, latest } = cardState(t, race);
     const allGroups = race.groupsFor(t.pid);
     const groups = allGroups.filter(g => !(c.hidden || []).includes(g.key)); // só as classes ligadas
@@ -338,20 +361,30 @@ function renderLive() {
       <td class="muted small">${esc(race.pointLabel(c.itin, latest))}</td><td class="pos">${sumPos}${sumPos !== '—' ? 'º' : ''}</td><td class="small">${sumCls}</td></tr>`);
     addTo(cards, t.rid, pilotCard(t, race, c, latest, groups, p, allGroups));
   }
-  const several = byRace.length > 1;
-  const summaryRows = byRace.map(({ rid, list }) => `${several ? `<tr class="race-row"><td colspan="5">${raceIcon(raceLabel(rid))} ${esc(raceLabel(rid))} <span class="muted">· ${pilotsLabel(list.length)}</span></td></tr>` : ''}${(summary.get(rid) || []).join('')}`).join('');
-  const cardSections = byRace.map(({ rid, list }) => several
+  const several = activeRaces.length > 1;
+  const summaryRows = activeRaces.map(({ rid, list }) => `${several ? `<tr class="race-row"><td colspan="5">${raceIcon(raceLabel(rid))} ${esc(raceLabel(rid))} <span class="muted">· ${pilotsLabel(list.length)}</span></td></tr>` : ''}${(summary.get(rid) || []).join('')}`).join('');
+  const endedSections = endedRaces.map(({ rid, list }) => {
+    const race = getRace(rid);
+    return `<section class="race-sec"><h2 class="race-h"><span>${raceIcon(raceLabel(rid))} ${esc(raceLabel(rid))}</span><small>🏁 Terminada</small></h2>
+      <div class="card pad final-card">${list.map(t => {
+        const p = race.parts.get(t.pid) || {};
+        const res = finalResult(race, t);
+        return `<div class="final-row"><span class="num">${esc(t.ident)}</span><span class="final-name">${esc(p.pilot || '—')}</span><b class="${/º$/.test(res) ? '' : 'bad'}">${res}</b><button class="icon-btn" data-arch-rm="${keyOf(t)}" aria-label="Retirar o n.º ${esc(t.ident)}">✕</button></div>`;
+      }).join('')}<button class="btn primary" data-final="${rid}">🏁 Ver classificação final</button></div></section>`;
+  }).join('');
+  const cardSections = activeRaces.map(({ rid, list }) => several
     ? `<section class="race-sec" data-race="${rid}"><h2 class="race-h"><span>${raceIcon(raceLabel(rid))} ${esc(raceLabel(rid))}</span><small>${pilotsLabel(list.length)}</small></h2>${(cards.get(rid) || []).join('')}</section>`
     : (cards.get(rid) || []).join('')).join('');
 
   el.innerHTML = head + `
-    <button class="btn primary stand-open" id="openStand">🏆 Classificação geral e por classes</button>
-    ${S.tracked.length > 1 ? `<div class="card"><table class="sum"><thead><tr><th>N.º</th><th>Piloto</th><th>Último ponto</th><th>Geral</th><th>Classe</th></tr></thead><tbody>${summaryRows}</tbody></table></div>` : ''}
-    ${docsBlock([...new Set(S.tracked.map(t => t.rid))])}
-    ${placesCard()}
+    ${activeCount ? '<button class="btn primary stand-open" id="openStand">🏆 Classificação geral e por classes</button>' : ''}
+    ${activeCount > 1 ? `<div class="card"><table class="sum"><thead><tr><th>N.º</th><th>Piloto</th><th>Último ponto</th><th>Geral</th><th>Classe</th></tr></thead><tbody>${summaryRows}</tbody></table></div>` : ''}
+    ${activeCount ? docsBlock(activeRaces.map(x => x.rid)) : ''}
+    ${activeCount ? placesCard() : ''}
     ${cardSections}
+    ${endedSections}
     ${addCard()}
-    <p class="muted small center">Geral nos intermédios = acumulado oficial até à especial anterior + tempo no intermédio (provisória).</p>`;
+    ${activeCount ? '<p class="muted small center">Geral nos intermédios = acumulado oficial até à especial anterior + tempo no intermédio (provisória).</p>' : ''}`;
 
   el.querySelectorAll('[data-scroll]').forEach(n => { if (scrolls[n.dataset.scroll] != null) n.scrollLeft = scrolls[n.dataset.scroll]; else n.scrollLeft = n.scrollWidth; });
   bindLiveHead();
@@ -364,6 +397,12 @@ function renderLive() {
   }
   el.querySelectorAll('[data-place]').forEach(b => b.onclick = () => openPlaces(b.dataset.place));
   $('#openStand')?.addEventListener('click', openStand);
+  el.querySelectorAll('[data-final]').forEach(b => b.onclick = () => openFinal(Number(b.dataset.final)));
+  el.querySelectorAll('[data-arch-rm]').forEach(b => b.onclick = () => {
+    const [rid, pid] = b.dataset.archRm.split(':').map(Number);
+    track(rid, { id: pid }, false);
+    render();
+  });
 }
 
 // ---------- Classificação completa (geral e por classes) ----------
@@ -381,11 +420,18 @@ function standSpecial(race, itin) {
 async function openStand() {
   const rids = addRids();
   if (view === 'pick' && pickRid !== stand.rid) { stand.rid = pickRid; stand.itin = null; stand.gkey = 'all'; }
-  if (!rids.includes(stand.rid)) stand.rid = S.tracked[0]?.rid ?? rids[0];
+  if (!rids.includes(stand.rid) || getRace(stand.rid).archived) { stand.rid = activeTracked()[0]?.rid ?? rids.find(r => !getRace(r).archived) ?? rids[0]; stand.itin = null; stand.gkey = 'all'; }
   $('#standDlg').showModal();
   renderStand();
   clearInterval(stand.timer);
   stand.timer = setInterval(refreshStand, S.settings.interval * 1000);
+  refreshStand();
+}
+
+function openFinal(rid) {
+  stand.rid = rid; stand.itin = null; stand.gkey = 'all'; stand.only = false;
+  $('#standDlg').showModal();
+  renderStand();
   refreshStand();
 }
 
@@ -402,18 +448,20 @@ function standToggle(rid, pid, on) {
 // As corridas dos pilotos seguidos já são atualizadas pelo ciclo principal.
 async function refreshStand() {
   const rid = stand.rid, race = getRace(rid);
-  if (S.tracked.some(t => t.rid === rid) && race.lastOk) { renderStand(); return; }
+  if ((race.archived || S.tracked.some(t => t.rid === rid)) && race.lastOk) { renderStand(); return; }
   if (stand.busy.has(rid)) return;
   stand.busy.add(rid);
   try { await race.refresh(); } catch (e) { race.error = e.message || 'erro de ligação'; }
   stand.busy.delete(rid);
-  if ($('#standDlg').open && stand.rid === rid) renderStand();
+  if (($('#standDlg').open || $('#finalBody')) && stand.rid === rid) renderStand();
 }
 
 function renderStand() {
-  const body = $('#standBody');
-  const rids = addRids();
+  const embedded = view === 'pick' ? $('#finalBody') : null;
+  const body = embedded || $('#standBody');
+  const rids = embedded ? S.event.rids : addRids();
   const race = getRace(stand.rid);
+  const isFinal = race.loaded && race.archived;
   const nm = r => raceNames.get(r) || (getRace(r).info ? getRace(r).name : `Corrida ${r}`);
   const raceTabs = rids.length > 1 ? `<div class="tabs" data-tabs="race">${rids.map(r => `<button class="tab ${r === stand.rid ? 'on' : ''}" data-sr="${r}">${raceIcon(nm(r))} ${esc(nm(r))}</button>`).join('')}</div>` : '';
   const keep = {};
@@ -427,7 +475,7 @@ function renderStand() {
       ${S.tracked.length ? trackedByRace().map(({ rid, list }, _, all) => `${all.length > 1 ? `<div class="sel-race">${raceIcon(raceLabel(rid))} ${esc(raceLabel(rid))}</div>` : ''}<div class="tabs" data-tabs="sel-${rid}">${list.map(t => `<span class="selchip"><button data-sj="${keyOf(t)}" title="Ver na classificação">${esc(t.ident)}</button><button data-su="${keyOf(t)}" aria-label="Retirar o n.º ${esc(t.ident)}">✕</button></span>`).join('')}</div>`).join('')
         : '<div class="muted small">Toca na ☆ de um piloto para o selecionares.</div>'}
     </div>`;
-  let html = raceTabs + selected, sig = '';
+  let html = raceTabs + (isFinal ? '' : selected), sig = '';
   if (!race.loaded || !race.lastOk && !race.itins.some(i => standSpecial(race, i.id))) {
     html += race.error
       ? `<p class="bad center pad">Não foi possível obter a classificação: ${esc(race.error)}</p>`
@@ -461,13 +509,13 @@ function renderStand() {
 
     html += `${race.itins.length > 1 ? `<select id="standItin" aria-label="Itinerário">${race.itins.map(i => `<option value="${i.id}" ${i.id === stand.itin ? 'selected' : ''}>${esc(i.name)}</option>`).join('')}</select>` : ''}
       <div class="tabs" data-tabs="class">${groups.map((g, i) => `<button class="tab ${g.key === group.key ? 'on' : ''}" data-sg="${i}" title="${esc(g.label)}">${esc(g.value)}</button>`).join('')}</div>
-      <div class="muted small">${sp ? `Após ${esc(sp.special_name || 'especial')}${live ? ' · <span class="bad">provisória, em curso</span>' : ''} · ${classified} ${classified === 1 ? 'classificado' : 'classificados'}${rows.length > classified ? ` · ${rows.length - classified} sem classificação` : ''}` : `Ainda sem tempos · ${rows.length} ${rows.length === 1 ? 'inscrito' : 'inscritos'}`}</div>`;
+      <div class="muted small">${sp ? `${isFinal ? '<b>🏁 Classificação final</b>' : `Após ${esc(sp.special_name || 'especial')}${live ? ' · <span class="bad">provisória, em curso</span>' : ''}`} · ${classified} ${classified === 1 ? 'classificado' : 'classificados'}${rows.length > classified ? ` · ${rows.length - classified} sem classificação` : ''}` : `Ainda sem tempos · ${rows.length} ${rows.length === 1 ? 'inscrito' : 'inscritos'}`}</div>`;
     const shownRows = stand.only ? rows.filter(r => mine.has(r.pid)) : rows;
     if (stand.only && !shownRows.length) html += '<p class="muted center pad">Nenhum dos teus pilotos nesta classe.</p>';
     if (shownRows.length) {
       const best = rows[0].v;
-      const star = (r, p) => { const on = mine.has(r.pid); return `<td class="c-sel"><button class="star ${on ? 'on' : ''}" data-st="${r.pid}" aria-pressed="${on}" aria-label="${on ? 'Retirar' : 'Selecionar'} o n.º ${esc(p.ident ?? '')}">${on ? '★' : '☆'}</button></td>`; };
-      html += `<div class="stand-wrap"><table class="stand-t"><thead><tr><th class="c-sel" aria-label="Selecionar"></th><th class="c-pos">Pos</th><th class="c-num">N.º</th><th>Piloto</th><th class="c-tm">Tempo</th><th class="c-gap">Dif.</th></tr></thead><tbody>${rows.map((r, i) => {
+      const star = (r, p) => { if (isFinal) return ''; const on = mine.has(r.pid); return `<td class="c-sel"><button class="star ${on ? 'on' : ''}" data-st="${r.pid}" aria-pressed="${on}" aria-label="${on ? 'Retirar' : 'Selecionar'} o n.º ${esc(p.ident ?? '')}">${on ? '★' : '☆'}</button></td>`; };
+      html += `<div class="stand-wrap"><table class="stand-t"><thead><tr>${isFinal ? '' : '<th class="c-sel" aria-label="Selecionar"></th>'}<th class="c-pos">Pos</th><th class="c-num">N.º</th><th>Piloto</th><th class="c-tm">Tempo</th><th class="c-gap">Dif.</th></tr></thead><tbody>${rows.map((r, i) => {
         if (stand.only && !mine.has(r.pid)) return '';
         const p = race.parts.get(r.pid) || {};
         const who = [p.pilot, p.copilot].filter(Boolean).join(' / ');
@@ -496,6 +544,7 @@ function renderStand() {
 
   body.querySelectorAll('[data-sr]').forEach(b => b.onclick = () => {
     stand.rid = Number(b.dataset.sr); stand.itin = null; stand.gkey = 'all';
+    if (embedded) { pickRid = stand.rid; renderPick(); return; }
     renderStand(); refreshStand();
   });
   body.querySelectorAll('[data-st]').forEach(b => b.onclick = () => {
@@ -529,8 +578,9 @@ const addRids = () => [...new Set([...(S.event?.rids || []), ...S.tracked.map(t 
 let addRid = null;
 
 function addCard() {
-  const rids = addRids();
-  if (!rids.includes(addRid)) addRid = S.tracked[S.tracked.length - 1]?.rid ?? rids[0];
+  const rids = addRids().filter(r => !getRace(r).archived);
+  if (!rids.length) return '';
+  if (!rids.includes(addRid)) addRid = [...S.tracked].reverse().find(t => rids.includes(t.rid))?.rid ?? rids[0];
   const nm = r => raceNames.get(r) || getRace(r).name || `Corrida ${r}`;
   return `<div class="card pad addcard"><b>➕ Adicionar pilotos</b>
     <div class="muted small">Os pilotos que já segues continuam na lista.</div>
@@ -558,6 +608,7 @@ function bindAddCard() {
       raceNames.set(r, race.name);
       const x = document.querySelector(`[data-addr="${r}"]`);
       if (x) x.textContent = `${raceIcon(race.name)} ${race.name}`;
+      if (race.archived && view === 'live') renderLive(); // já terminou: tira-a de "Adicionar pilotos"
     }).catch(() => {}).finally(() => { race.loading = false; });
   });
   const run = async () => {
@@ -749,6 +800,7 @@ function bindLiveHead() {
 }
 
 function bindProxPanel() {
+  if (!$('#proxPanel')) return;
   $('#proxToggle')?.addEventListener('click', () => setProx(!S.prox.on));
   $('#proxFix')?.addEventListener('click', () => {
     if (!gpsPos) { toast('Ainda não há posição GPS para fixar.'); return; }
@@ -964,7 +1016,8 @@ async function poll() {
   if (polling || !S.tracked.length) return;
   polling = true;
   try {
-    const rids = [...new Set(S.tracked.map(t => t.rid))];
+    // provas arquivadas: os dados finais só precisam de ser lidos uma vez
+    const rids = [...new Set(S.tracked.map(t => t.rid))].filter(r => !(getRace(r).archived && getRace(r).lastOk));
     await Promise.all(rids.map(async rid => {
       const race = getRace(rid);
       try { await race.refresh(); } catch (e) { race.error = e.message || 'erro de ligação'; }
@@ -1006,7 +1059,7 @@ function checkAlerts() {
   const A = S.settings.alerts;
   for (const t of S.tracked) {
     const race = getRace(t.rid);
-    if (!race.lastOk) continue;
+    if (!race.lastOk || race.archived) continue;
     const s = snapshot(t, race);
     const old = snaps.get(keyOf(t));
     snaps.set(keyOf(t), s);
@@ -1144,14 +1197,14 @@ async function proxTick() {
   proxBusy = true;
   try {
     const sids = new Map();
-    for (const t of S.tracked) sids.set(t.rid, await resolveTrackId(t.rid));
+    for (const t of activeTracked()) sids.set(t.rid, await resolveTrackId(t.rid));
     const used = new Set([...sids.values()].filter(Boolean));
     await Promise.all([...used].map(sid => {
       if (!trackSrc.has(sid)) trackSrc.set(sid, new TrackSource(sid));
       return trackSrc.get(sid).refresh();
     }));
     const user = userPos();
-    for (const t of S.tracked) {
+    for (const t of activeTracked()) {
       const key = keyOf(t);
       const sid = sids.get(t.rid);
       const p = getRace(t.rid).parts.get(t.pid);

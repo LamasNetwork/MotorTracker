@@ -230,6 +230,11 @@ table { border-collapse: collapse; width: 100%; }
 .stand-t .c-num { width: 38px; min-width: 0; text-align: center; }
 .stand-t .c-tm { width: 72px; text-align: right; font-variant-numeric: tabular-nums; }
 .stand-t .c-gap { width: 72px; padding-right: 8px; text-align: right; font-variant-numeric: tabular-nums; }
+.final-page { padding: 0; margin-top: 10px; overflow: visible; }
+.final-card { display: grid; gap: 4px; }
+.final-card > .btn { margin-top: 6px; }
+.final-row { display: flex; align-items: center; gap: 8px; min-height: 36px; border-bottom: 1px solid var(--line); }
+.final-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .stand-t tr.out td { color: var(--muted); }
 .stand-t tr.out td.bad { color: var(--bad); font-size: 12px; }
 .stand-t sup { font-size: 10px; font-weight: 700; margin-left: 1px; }
