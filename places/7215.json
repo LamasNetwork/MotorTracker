@@ -1,0 +1,10 @@
+[
+  {"type": "start", "name": "Partida PEC 1 Porto Santo Line", "lat": 33.050062, "lon": -16.348748, "note": "coordenadas oficiais"},
+  {"type": "finish", "name": "Chegada PEC 1 Porto Santo Line", "lat": 33.047452, "lon": -16.352234, "note": "coordenadas oficiais"},
+  {"type": "start", "name": "Partida PEC 2/4 Serras Coral", "lat": 33.070713, "lon": -16.331837, "note": "coordenadas oficiais"},
+  {"type": "finish", "name": "Chegada PEC 2/4 Serras Coral", "lat": 33.078413, "lon": -16.346422, "note": "coordenadas oficiais"},
+  {"type": "start", "name": "Partida PEC 3/5/7 Golfe", "lat": 33.046121, "lon": -16.361457, "note": "coordenadas oficiais"},
+  {"type": "finish", "name": "Chegada PEC 3/5/7 Golfe", "lat": 33.037731, "lon": -16.369248, "note": "coordenadas oficiais"},
+  {"type": "start", "name": "Partida PEC 6/8 Picos", "lat": 33.081064, "lon": -16.348668, "note": "coordenadas oficiais"},
+  {"type": "finish", "name": "Chegada PEC 6/8 Picos", "lat": 33.070461, "lon": -16.323094, "note": "coordenadas oficiais"}
+]
