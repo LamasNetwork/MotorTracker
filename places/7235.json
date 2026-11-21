@@ -1,0 +1,15 @@
+[
+  {"type": "start", "name": "Partida T01", "lat": 38.728002, "lon": -9.191573, "note": "coordenadas oficiais"},
+  {"type": "start", "name": "Partida T02", "lat": 38.866762, "lon": -9.215402, "note": "coordenadas oficiais"},
+  {"type": "start", "name": "Partida T03", "lat": 38.926782, "lon": -9.176322, "note": "coordenadas oficiais"},
+  {"type": "start", "name": "Partida T04", "lat": 38.97543, "lon": -9.16448, "note": "coordenadas oficiais"},
+  {"type": "start", "name": "Partida T05", "lat": 38.980508, "lon": -9.14219, "note": "coordenadas oficiais"},
+  {"type": "start", "name": "Partida T06", "lat": 38.99947, "lon": -9.0679, "note": "coordenadas oficiais"},
+  {"type": "start", "name": "Partida T07", "lat": 39.006053, "lon": -9.005875, "note": "coordenadas oficiais"},
+  {"type": "start", "name": "Partida T08", "lat": 39.03602, "lon": -9.063692, "note": "coordenadas oficiais"},
+  {"type": "start", "name": "Partida T09", "lat": 39.053762, "lon": -9.289548, "note": "coordenadas oficiais"},
+  {"type": "start", "name": "Partida T10", "lat": 38.986083, "lon": -9.33945, "note": "coordenadas oficiais"},
+  {"type": "start", "name": "Partida T11", "lat": 38.909072, "lon": -9.346895, "note": "coordenadas oficiais"},
+  {"type": "start", "name": "Partida T12", "lat": 38.882611, "lon": -9.376212, "note": "coordenadas oficiais"},
+  {"type": "start", "name": "Partida T13", "lat": 38.832523, "lon": -9.292882, "note": "coordenadas oficiais"}
+]
