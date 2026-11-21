@@ -279,6 +279,18 @@ function cardState(t, race) {
   return { c, latest };
 }
 
+// Pilotos seguidos agrupados por corrida (carros e motos contam como provas separadas).
+function trackedByRace() {
+  const byRid = new Map();
+  for (const t of S.tracked) {
+    if (!byRid.has(t.rid)) byRid.set(t.rid, []);
+    byRid.get(t.rid).push(t);
+  }
+  return [...byRid].map(([rid, list]) => ({ rid, list }));
+}
+const raceLabel = rid => raceNames.get(rid) || (getRace(rid).info ? getRace(rid).name : `Corrida ${rid}`);
+const pilotsLabel = n => `${n} ${n === 1 ? 'piloto' : 'pilotos'}`;
+
 function renderLive() {
   const el = $('#view');
   if (!S.tracked.length) {
@@ -304,7 +316,9 @@ function renderLive() {
 
   if (loading && !lastUpdate) { el.innerHTML = head + '<p class="muted center pad">A obter tempos…</p>'; bindLiveHead(); return; }
 
-  const cards = [], summary = [];
+  const cards = new Map(), summary = new Map();
+  const byRace = trackedByRace();
+  const addTo = (map, rid, html) => { if (!map.has(rid)) map.set(rid, []); map.get(rid).push(html); };
   for (const t of S.tracked) {
     const race = getRace(t.rid);
     if (!race.loaded) continue;
@@ -320,17 +334,22 @@ function renderLive() {
       const g2 = groups.find(g => g.kind !== 'all');
       if (g2) sumCls = `${posOf(race.filter(ov, g2), t.pid) ?? '—'}º ${esc(g2.value)}`;
     }
-    summary.push(`<tr data-jump="${keyOf(t)}"><td class="num">${esc(p.ident)}</td><td>${esc(p.pilot)}${race.abandoned(t.pid) ? ' <span class="bad">AB</span>' : ''}</td>
+    addTo(summary, t.rid, `<tr data-jump="${keyOf(t)}"><td class="num">${esc(p.ident)}</td><td>${esc(p.pilot)}${race.abandoned(t.pid) ? ' <span class="bad">AB</span>' : ''}</td>
       <td class="muted small">${esc(race.pointLabel(c.itin, latest))}</td><td class="pos">${sumPos}${sumPos !== '—' ? 'º' : ''}</td><td class="small">${sumCls}</td></tr>`);
-    cards.push(pilotCard(t, race, c, latest, groups, p, allGroups));
+    addTo(cards, t.rid, pilotCard(t, race, c, latest, groups, p, allGroups));
   }
+  const several = byRace.length > 1;
+  const summaryRows = byRace.map(({ rid, list }) => `${several ? `<tr class="race-row"><td colspan="5">${raceIcon(raceLabel(rid))} ${esc(raceLabel(rid))} <span class="muted">· ${pilotsLabel(list.length)}</span></td></tr>` : ''}${(summary.get(rid) || []).join('')}`).join('');
+  const cardSections = byRace.map(({ rid, list }) => several
+    ? `<section class="race-sec" data-race="${rid}"><h2 class="race-h"><span>${raceIcon(raceLabel(rid))} ${esc(raceLabel(rid))}</span><small>${pilotsLabel(list.length)}</small></h2>${(cards.get(rid) || []).join('')}</section>`
+    : (cards.get(rid) || []).join('')).join('');
 
   el.innerHTML = head + `
     <button class="btn primary stand-open" id="openStand">🏆 Classificação geral e por classes</button>
-    ${S.tracked.length > 1 ? `<div class="card"><table class="sum"><thead><tr><th>N.º</th><th>Piloto</th><th>Último ponto</th><th>Geral</th><th>Classe</th></tr></thead><tbody>${summary.join('')}</tbody></table></div>` : ''}
+    ${S.tracked.length > 1 ? `<div class="card"><table class="sum"><thead><tr><th>N.º</th><th>Piloto</th><th>Último ponto</th><th>Geral</th><th>Classe</th></tr></thead><tbody>${summaryRows}</tbody></table></div>` : ''}
     ${docsBlock([...new Set(S.tracked.map(t => t.rid))])}
     ${placesCard()}
-    ${cards.join('')}
+    ${cardSections}
     ${addCard()}
     <p class="muted small center">Geral nos intermédios = acumulado oficial até à especial anterior + tempo no intermédio (provisória).</p>`;
 
@@ -405,7 +424,7 @@ function renderStand() {
       <div class="stand-sel-h"><b>⭐ Selecionados (${S.tracked.length})</b>
         ${S.tracked.length ? `<button class="chip tog ${stand.only ? 'on' : 'off-plain'}" id="standOnly" aria-pressed="${stand.only}">Só estes</button>
         <button class="btn small" id="standLive">Ver ao vivo</button>` : ''}</div>
-      ${S.tracked.length ? `<div class="tabs" data-tabs="sel">${S.tracked.map(t => `<span class="selchip"><button data-sj="${keyOf(t)}" title="Ver na classificação">${esc(t.ident)}</button><button data-su="${keyOf(t)}" aria-label="Retirar o n.º ${esc(t.ident)}">✕</button></span>`).join('')}</div>`
+      ${S.tracked.length ? trackedByRace().map(({ rid, list }, _, all) => `${all.length > 1 ? `<div class="sel-race">${raceIcon(raceLabel(rid))} ${esc(raceLabel(rid))}</div>` : ''}<div class="tabs" data-tabs="sel-${rid}">${list.map(t => `<span class="selchip"><button data-sj="${keyOf(t)}" title="Ver na classificação">${esc(t.ident)}</button><button data-su="${keyOf(t)}" aria-label="Retirar o n.º ${esc(t.ident)}">✕</button></span>`).join('')}</div>`).join('')
         : '<div class="muted small">Toca na ☆ de um piloto para o selecionares.</div>'}
     </div>`;
   let html = raceTabs + selected, sig = '';
