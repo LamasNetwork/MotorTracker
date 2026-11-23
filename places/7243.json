@@ -3,7 +3,7 @@
   {"type": "assist", "name": "Parque de Assistência - Estádio Municipal Dr. Magalhães Pessoa, Leiria", "lat": 39.7487752, "lon": -8.812924, "note": "Regulamento Particular, art. 1.9 (parque de estacionamento do Estádio)"},
   {"type": "start", "name": "Partida do Rali - Estádio Municipal, Leiria", "lat": 39.7487752, "lon": -8.812924, "note": "Regulamento Particular (localização do Estádio)"},
   {"type": "finish", "name": "Chegada do Rali - Estádio Municipal, Leiria", "lat": 39.7487752, "lon": -8.812924, "note": "Regulamento Particular (localização do Estádio)"},
-  {"type": "gas", "name": "Zona de Reabastecimento - Leiria (junto à assistência)", "lat": 39.7487752, "lon": -8.812924, "note": "Mapa de controlos (Reabastecimento - Leiria); ponto aprox., por confirmar no roadbook"},
+  {"type": "gas", "name": "Zona de Reabastecimento - Leiria (junto à assistência)", "lat": 39.7487752, "lon": -8.812924, "note": "Aditamento nº 1 (Mapa de controlos, Reabastecimento - Leiria); ponto aprox., por confirmar"},
   {"type": "gas", "name": "Reabastecimento remoto - Pombal", "lat": 39.919057, "lon": -8.631597, "note": "Regulamento Particular, art. 1.10 (link de mapa oficial)"},
   {"type": "start", "name": "Partida Shakedown / PE 2 Santa (Caranguejeira)", "lat": 39.773039, "lon": -8.713939, "note": "coordenadas oficiais"},
   {"type": "finish", "name": "Chegada Shakedown (Caranguejeira)", "lat": 39.774217, "lon": -8.68325, "note": "coordenadas oficiais"},
