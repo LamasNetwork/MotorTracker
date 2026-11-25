@@ -12,5 +12,7 @@
   {"type": "fuel", "name": "BP Lagos", "lat": 37.1197, "lon": -8.6733, "note": "Postos autorizados (Locais de Interesse)"},
   {"type": "fuel", "name": "Intermarché Budens", "lat": 37.0863473, "lon": -8.8281741, "note": "Postos autorizados (Locais de Interesse)"},
   {"type": "fuel", "name": "GALP Silves", "lat": 37.196469, "lon": -8.430153, "note": "Postos autorizados (Locais de Interesse)"},
-  {"type": "fuel", "name": "BP EN125 Alvor", "lat": 37.1617, "lon": -8.5738, "note": "Postos autorizados (Locais de Interesse)"}
+  {"type": "fuel", "name": "BP EN125 Alvor", "lat": 37.1617, "lon": -8.5738, "note": "Postos autorizados (Locais de Interesse)"},
+  {"type": "ze", "name": "Zona de Público 1 (ZP 1)", "lat": 37.1663737, "lon": -8.7466525, "note": "Zonas de Público (coordenadas oficiais)"},
+  {"type": "ze", "name": "Zona de Público 2 (ZP 2)", "lat": 37.1398621, "lon": -8.7799498, "note": "Zonas de Público (coordenadas oficiais)"}
 ]
