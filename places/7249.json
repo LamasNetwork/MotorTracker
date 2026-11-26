@@ -14,5 +14,14 @@
   {"type": "fuel", "name": "GALP Silves", "lat": 37.196469, "lon": -8.430153, "note": "Postos autorizados (Locais de Interesse)"},
   {"type": "fuel", "name": "BP EN125 Alvor", "lat": 37.1617, "lon": -8.5738, "note": "Postos autorizados (Locais de Interesse)"},
   {"type": "ze", "name": "Zona de Público 1 (ZP 1)", "lat": 37.1663737, "lon": -8.7466525, "note": "Zonas de Público (coordenadas oficiais)"},
-  {"type": "ze", "name": "Zona de Público 2 (ZP 2)", "lat": 37.1398621, "lon": -8.7799498, "note": "Zonas de Público (coordenadas oficiais)"}
+  {"type": "ze", "name": "Zona de Público 2 (ZP 2)", "lat": 37.1398621, "lon": -8.7799498, "note": "Zonas de Público (coordenadas oficiais)"},
+  {"type": "ze", "name": "Zona de Público 3 - Budens (ZP 3)", "lat": 37.0792024, "lon": -8.8358543, "note": "Zonas de Público (coordenadas oficiais)"},
+  {"type": "ze", "name": "Zona de Público 4 - Barão São João (ZP 4)", "lat": 37.143983, "lon": -8.7692101, "note": "Zonas de Público (coordenadas oficiais)"},
+  {"type": "ze", "name": "Zona de Público 6 - Bensafrim (ZP 6)", "lat": 37.1568187, "lon": -8.7358741, "note": "Zonas de Público (coordenadas oficiais)"},
+  {"type": "ze", "name": "Zona de Público 7 - Corsino (ZP 7)", "lat": 37.2328719, "lon": -8.7966859, "note": "Zonas de Público (coordenadas oficiais)"},
+  {"type": "ze", "name": "Zona de Público 8 - Aljezur (ZP 8)", "lat": 37.362194, "lon": -8.738872, "note": "Zonas de Público (coordenadas oficiais)"},
+  {"type": "ze", "name": "Zona de Público 9 - Relva Grande (ZP 9)", "lat": 37.4440481, "lon": -8.6449905, "note": "Zonas de Público (coordenadas oficiais)"},
+  {"type": "ze", "name": "Zona de Público 10 - Várzea do Carvalho (ZP 10)", "lat": 37.4592443, "lon": -8.5953013, "note": "Zonas de Público (coordenadas oficiais)"},
+  {"type": "ze", "name": "Zona de Público 11 - Pereiras (ZP 11)", "lat": 37.4170917, "lon": -8.324842, "note": "Zonas de Público (coordenadas oficiais)"},
+  {"type": "ze", "name": "Zona de Público 12 - Pereiras 2 (ZP 12)", "lat": 37.3860867, "lon": -8.446805, "note": "Zonas de Público (coordenadas oficiais)"}
 ]
